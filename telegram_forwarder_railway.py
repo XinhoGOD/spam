@@ -659,25 +659,56 @@ async def confirm_forward_callback(event):
         
         await event.edit("⏳ **Procesando reenvío...**")
         
-        # Reenviar mensaje
+        # Obtener y reenviar mensaje
         try:
             original_message = await bot.get_messages(user_id, ids=message_id)
             if not original_message:
                 await event.edit("❌ No se pudo obtener el mensaje original.")
                 return
             
-            # Reenviar a grupos
+            logger.info(f"🔄 Iniciando reenvío del mensaje a {len(TARGET_GROUP_IDS)} grupos")
+            
+            # Reenviar a grupos usando el userbot para enviar el contenido
             successful_forwards = 0
             failed_forwards = 0
             
             for group_id in TARGET_GROUP_IDS:
                 try:
-                    await userbot.forward_messages(group_id, original_message)
+                    # En lugar de forward_messages, enviar el contenido del mensaje
+                    if original_message.text:
+                        # Mensaje de texto
+                        await userbot.send_message(group_id, original_message.text)
+                    elif original_message.media:
+                        # Mensaje con media (foto, video, documento, etc.)
+                        if original_message.photo:
+                            await userbot.send_file(group_id, original_message.photo, caption=original_message.text or "")
+                        elif original_message.video:
+                            await userbot.send_file(group_id, original_message.video, caption=original_message.text or "")
+                        elif original_message.document:
+                            await userbot.send_file(group_id, original_message.document, caption=original_message.text or "")
+                        elif original_message.voice:
+                            await userbot.send_file(group_id, original_message.voice, caption=original_message.text or "")
+                        elif original_message.video_note:
+                            await userbot.send_file(group_id, original_message.video_note)
+                        elif original_message.sticker:
+                            await userbot.send_file(group_id, original_message.sticker)
+                        else:
+                            # Otros tipos de media
+                            await userbot.send_file(group_id, original_message.media, caption=original_message.text or "")
+                    else:
+                        # Mensaje vacío o sin contenido reconocible
+                        await userbot.send_message(group_id, "[Mensaje sin contenido de texto]")
+                    
                     successful_forwards += 1
+                    logger.info(f"✅ Mensaje enviado exitosamente al grupo {group_id}")
                     await asyncio.sleep(FORWARD_DELAY)
+                    
                 except Exception as e:
                     failed_forwards += 1
-                    logger.error(f"Error reenviando a {group_id}: {e}")
+                    logger.error(f"❌ Error enviando a {group_id}: {e}")
+                    # Log más detallado del error
+                    logger.error(f"   Tipo de error: {type(e).__name__}")
+                    logger.error(f"   Detalles del mensaje: texto={bool(original_message.text)}, media={bool(original_message.media)}")
             
             # Mostrar resultado
             if successful_forwards > 0:
