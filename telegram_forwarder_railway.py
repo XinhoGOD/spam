@@ -36,6 +36,10 @@ try:
     )
     logger = logging.getLogger(__name__)
     logger.info("✅ Configuración de Railway cargada correctamente")
+    logger.info(f"🔍 DEBUG - RAILWAY_MODE: {RAILWAY_MODE}")
+    logger.info(f"🔍 DEBUG - USE_SESSION_STRING: {USE_SESSION_STRING}")
+    import os
+    logger.info(f"🔍 DEBUG - SESSION_STRING en env: {bool(os.environ.get('SESSION_STRING', ''))}")
 except ImportError:
     # Fallback a configuración local
     try:
@@ -251,6 +255,14 @@ async def send_notification_to_admin(message: str) -> None:
 async def init_userbot():
     """Inicializa el userbot con diferentes métodos según la configuración"""
     global userbot, USERBOT_AVAILABLE
+    
+    # DEBUG: Verificar variables de entorno
+    import os
+    session_string_env = os.environ.get('SESSION_STRING', '')
+    logger.info(f"🔍 DEBUG - RAILWAY_MODE: {RAILWAY_MODE}")
+    logger.info(f"🔍 DEBUG - USE_SESSION_STRING: {USE_SESSION_STRING}")
+    logger.info(f"🔍 DEBUG - SESSION_STRING disponible: {bool(session_string_env)}")
+    logger.info(f"🔍 DEBUG - Longitud SESSION_STRING: {len(session_string_env)}")
     
     try:
         if USE_SESSION_STRING and SESSION_STRING:
