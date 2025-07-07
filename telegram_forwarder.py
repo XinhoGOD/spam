@@ -1194,11 +1194,14 @@ async def main():
         logger.info("✅ Sistema híbrido iniciado correctamente")
         logger.info("🤖 Bot y userbot ejecutándose simultáneamente")
         
-        # Mantener el programa ejecutándose
-        await asyncio.gather(
-            bot.run_until_disconnected(),
-            userbot.run_until_disconnected()
-        )
+        # Eliminar la ejecución indefinida para que el bot se apague tras el reenvío
+        # await asyncio.gather(
+        #     bot.run_until_disconnected(),
+        #     userbot.run_until_disconnected()
+        # )
+        logger.info("⏹️ Esperando reenvío, el sistema se apagará tras reenviar el mensaje.")
+        while True:
+            await asyncio.sleep(10)
         
     except KeyboardInterrupt:
         logger.info("Cerrando sistema...")
