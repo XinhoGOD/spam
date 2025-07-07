@@ -282,7 +282,14 @@ async def init_userbot():
         if USE_SESSION_STRING and SESSION_STRING:
             logger.info("🔄 Intentando conectar userbot con session string...")
             userbot = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
-            await userbot.start()
+            
+            # Conectar sin autenticación interactiva
+            await userbot.connect()
+            
+            # Verificar que la sesión sea válida
+            if not await userbot.is_user_authorized():
+                logger.error("❌ SESSION_STRING no es válido o ha expirado")
+                raise Exception("Sesión no autorizada")
             
             userbot_info = await userbot.get_me()
             logger.info(f"✅ Userbot conectado con session string: @{userbot_info.username}")
@@ -291,7 +298,13 @@ async def init_userbot():
         elif not RAILWAY_MODE:
             logger.info("🔄 Intentando conectar userbot con sesión local...")
             userbot = TelegramClient('userbot_session', API_ID, API_HASH)
-            await userbot.start()
+            
+            # Conectar primero
+            await userbot.connect()
+            
+            # Si no está autorizado, hacer start() para autenticación local
+            if not await userbot.is_user_authorized():
+                await userbot.start()
             
             userbot_info = await userbot.get_me()
             logger.info(f"✅ Userbot conectado localmente: @{userbot_info.username}")
