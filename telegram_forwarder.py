@@ -67,6 +67,9 @@ TARGET_GROUP_IDS = []
 # Variable global para almacenar grupos problemáticos (con bots)
 PROBLEMATIC_GROUPS = set()
 
+# Variable global para almacenar mensajes ya procesados (evitar duplicados)
+PROCESSED_MESSAGES = set()
+
 # ID del administrador (se obtiene automáticamente)
 ADMIN_ID = None
 BOT_ID = None
@@ -263,6 +266,13 @@ async def clear_problematic_groups():
     PROBLEMATIC_GROUPS.clear()
     logger.info(f"🧹 Grupos problemáticos limpiados: {old_count} → 0")
 
+async def clear_processed_messages():
+    """Limpia la lista de mensajes procesados (útil para reintentar)"""
+    global PROCESSED_MESSAGES
+    old_count = len(PROCESSED_MESSAGES)
+    PROCESSED_MESSAGES.clear()
+    logger.info(f"🧹 Mensajes procesados limpiados: {old_count} → 0")
+
 async def send_notification_to_admin(message: str) -> None:
     """Envía una notificación al administrador a través del bot"""
     try:
@@ -306,7 +316,8 @@ async def start_command(event):
             buttons = [
                 [Button.inline("🚀 Reenviar Mensaje", b"forward_message")],
                 [Button.inline("📊 Ver Grupos", b"show_groups"), Button.inline("🔄 Actualizar Grupos", b"refresh_groups")],
-                [Button.inline("🧹 Limpiar Grupos Problemáticos", b"clear_problematic")]
+                [Button.inline("🧹 Limpiar Grupos Problemáticos", b"clear_problematic")],
+                [Button.inline("🗑️ Limpiar Mensajes Procesados", b"clear_processed")]
             ]
         else:
             # Mensaje para usuarios públicos
@@ -459,7 +470,8 @@ async def back_to_main_callback(event):
             buttons = [
                 [Button.inline("🚀 Reenviar Mensaje", b"forward_message")],
                 [Button.inline("📊 Ver Grupos", b"show_groups"), Button.inline("🔄 Actualizar Grupos", b"refresh_groups")],
-                [Button.inline("🧹 Limpiar Grupos Problemáticos", b"clear_problematic")]
+                [Button.inline("🧹 Limpiar Grupos Problemáticos", b"clear_problematic")],
+                [Button.inline("🗑️ Limpiar Mensajes Procesados", b"clear_processed")]
             ]
         else:
             # Mensaje para usuarios públicos
@@ -562,6 +574,21 @@ async def cancel_forward_callback(event):
         logger.error(f"Error en cancel_forward_callback: {e}")
         await event.answer("❌ Error cancelando reenvío")
 
+@bot.on(events.CallbackQuery(data=b"clear_processed"))
+async def clear_processed_callback(event):
+    """Maneja el callback del botón 'Limpiar Mensajes Procesados'"""
+    try:
+        user_id = event.sender_id
+        if not await is_admin(user_id):
+            await event.answer("❌ Solo el administrador puede usar esta función.")
+            return
+        await clear_processed_messages()
+        await event.edit("🗑️ **Mensajes procesados limpiados.**\n\nPuedes volver a reenviar mensajes sin riesgo de duplicados.", buttons=Button.inline("🔙 Volver", b"back_to_main"))
+        await event.answer("Mensajes procesados limpiados")
+    except Exception as e:
+        logger.error(f"Error en clear_processed_callback: {e}")
+        await event.answer("❌ Error limpiando mensajes procesados")
+
 @bot.on(events.NewMessage())
 async def handle_message(event):
     """Maneja todos los mensajes enviados al bot"""
@@ -634,7 +661,13 @@ async def handle_message(event):
 async def handle_saved_messages(event):
     """Maneja los mensajes reenviados por el bot"""
     try:
-        logger.info(f"🔍 Userbot recibió mensaje: {event.message.id}")
+        message_id = event.message.id
+        logger.info(f"🔍 Userbot recibió mensaje: {message_id}")
+        
+        # Verificar si el mensaje ya fue procesado (evitar duplicados)
+        if message_id in PROCESSED_MESSAGES:
+            logger.info(f"⏭️ Mensaje {message_id} ya fue procesado, saltando...")
+            return
         
         # Verificar si el mensaje fue reenviado por el bot
         if not event.message.fwd_from:
@@ -795,7 +828,25 @@ async def handle_saved_messages(event):
         except Exception as e:
             logger.error(f"Error notificando resultado: {e}")
         
+        # Marcar mensaje como procesado para evitar duplicados
+        PROCESSED_MESSAGES.add(message_id)
+        logger.info(f"✅ Mensaje {message_id} marcado como procesado")
+        
+        # Limpiar mensajes antiguos (mantener solo los últimos 1000)
+        if len(PROCESSED_MESSAGES) > 1000:
+            # Convertir a lista, tomar los últimos 1000 y volver a set
+            processed_list = list(PROCESSED_MESSAGES)
+            PROCESSED_MESSAGES = set(processed_list[-1000:])
+            logger.info("🧹 Lista de mensajes procesados limpiada")
+        
         logger.info(f"Reenvío completado: {successful_forwards} exitosos, {failed_forwards} fallidos")
+
+        # Apagar el bot automáticamente después de reenviar
+        logger.info("🛑 Apagando el bot tras finalizar el reenvío de mensajes...")
+        await userbot.disconnect()
+        await bot.disconnect()
+        import sys
+        sys.exit(0)
         
     except Exception as e:
         logger.error(f"Error en handle_saved_messages: {e}")
