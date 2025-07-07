@@ -1,0 +1,29 @@
+# Archivos de sesión de Telegram (contienen información sensible)
+*.session
+*.session-journal
+
+# Archivos de configuración con datos sensibles
+config.py
+
+# Logs
+*.log
+
+# Archivos temporales
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo 

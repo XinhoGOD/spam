@@ -1,0 +1,6 @@
+# Dependencias del Bot Híbrido de Reenvío
+# ======================================
+
+telethon==1.36.0
+asyncio
+python-dotenv==1.0.0
