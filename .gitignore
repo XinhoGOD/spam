@@ -1,6 +1,7 @@
 # Archivos de sesión de Telegram (contienen información sensible)
-*.session
-*.session-journal
+# *.session
+# *.session-journal
+userbot_session.session
 
 # Archivos de configuración con datos sensibles
 config.py
