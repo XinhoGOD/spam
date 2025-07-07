@@ -659,57 +659,37 @@ async def handle_message(event):
 
 @userbot.on(events.NewMessage())
 async def handle_saved_messages(event):
-    """Maneja los mensajes reenviados por el bot"""
+    """Maneja SOLO los mensajes reenviados por el bot y apaga el sistema tras procesar uno válido"""
     try:
         message_id = event.message.id
         logger.info(f"🔍 Userbot recibió mensaje: {message_id}")
-        
-        # Verificar si el mensaje ya fue procesado (evitar duplicados)
+
+        # FILTRO: Solo procesar si es un reenvío válido del bot y no ha sido procesado
         if message_id in PROCESSED_MESSAGES:
             logger.info(f"⏭️ Mensaje {message_id} ya fue procesado, saltando...")
             return
-        
-        # Verificar si el mensaje fue reenviado por el bot
         if not event.message.fwd_from:
-            logger.debug("❌ Mensaje no es un reenvío")
+            logger.debug("❌ Mensaje no es un reenvío, ignorando...")
             return
-        
-        logger.info(f"✅ Mensaje es un reenvío")
-        
-        # Obtener ID del bot
+        # Verifica que el mensaje reenviado venga del bot
         bot_id = await get_bot_id()
-        logger.info(f"🤖 ID del bot: {bot_id}")
-        
-        # Verificar si el mensaje original fue enviado por el bot
-        logger.info(f"🔍 Verificando origen del mensaje...")
-        logger.info(f"   fwd_from.from_id: {event.message.fwd_from.from_id}")
-        logger.info(f"   bot_id esperado: {bot_id}")
-        
-        # Verificar si el mensaje viene del bot
-        # Cuando el bot reenvía, el from_id es del usuario original, no del bot
-        # Verificamos que el mensaje sea un reenvío válido
-        is_valid_forward = (event.message.fwd_from and 
-                           event.message.fwd_from.from_id and
-                           hasattr(event.message.fwd_from.from_id, 'user_id'))
-        
-        if not is_valid_forward:
-            logger.info(f"❌ Mensaje no es un reenvío válido, ignorando...")
+        fwd_from_id = getattr(event.message.fwd_from.from_id, 'user_id', None)
+        if fwd_from_id != bot_id:
+            logger.debug(f"❌ Mensaje reenviado no proviene del bot (fwd_from_id={fwd_from_id}), ignorando...")
             return
-        
-        logger.info("✅ Mensaje válido detectado - procediendo con reenvío")
-        
+
+        # Si pasa los filtros, ejecutar la lógica de reenvío y apagado
+        logger.info("✅ Mensaje válido detectado - procediendo con reenvío y apagado")
+        # ... (resto del código de reenvío y apagado igual que antes) ...
+        # (COPIAR aquí el bloque desde 'Contador de grupos exitosos' hasta sys.exit(0))
+
         # Contador de grupos exitosos
         successful_forwards = 0
         failed_forwards = 0
-        
-        # Reenviar a todos los grupos objetivo (excluyendo problemáticos)
         valid_groups = [gid for gid in TARGET_GROUP_IDS if gid not in PROBLEMATIC_GROUPS]
-        
         logger.info(f"📊 Grupos configurados: {len(TARGET_GROUP_IDS)}")
         logger.info(f"📊 Grupos problemáticos: {len(PROBLEMATIC_GROUPS)}")
         logger.info(f"📊 Grupos válidos para reenvío: {len(valid_groups)}")
-        
-        # Mostrar qué grupos están siendo procesados
         logger.info("📋 Grupos a procesar:")
         for i, group_id in enumerate(valid_groups, 1):
             try:
@@ -718,12 +698,9 @@ async def handle_saved_messages(event):
                 logger.info(f"   {i}. {group_title} (ID: {group_id})")
             except:
                 logger.info(f"   {i}. Grupo {group_id} (no accesible)")
-        
-        # Si no hay grupos válidos, intentar con todos los grupos (modo forzado)
         if not valid_groups and TARGET_GROUP_IDS:
             logger.warning("⚠️ No hay grupos válidos, intentando reenvío forzado...")
             valid_groups = TARGET_GROUP_IDS.copy()
-        
         if not valid_groups:
             logger.warning("⚠️ No hay grupos configurados para reenviar")
             result_message = (
@@ -733,8 +710,6 @@ async def handle_saved_messages(event):
                 "• Usa el botón '🔄 Actualizar Grupos' para detectar grupos\n"
                 "• O configura grupos manualmente en config.py"
             )
-            
-            # Notificar al usuario
             for user_id, message_id in bot_state.processing_message.items():
                 try:
                     await bot.edit_message(user_id, message_id, result_message)
@@ -742,38 +717,26 @@ async def handle_saved_messages(event):
                 except:
                     pass
             return
-        
         for group_id in valid_groups:
             try:
-                # Verificar si el grupo contiene bots antes de reenviar
                 try:
-                    # Intentar obtener información del grupo
                     entity = await userbot.get_entity(group_id)
                     group_title = getattr(entity, 'title', f'Grupo {group_id}')
                 except Exception as e:
                     logger.warning(f"No se pudo obtener información del grupo {group_id}: {e}")
                     group_title = f'Grupo {group_id}'
-                
-                # Intentar reenviar el mensaje
                 await userbot.forward_messages(group_id, event.message)
                 successful_forwards += 1
                 logger.info(f"Mensaje reenviado exitosamente a {group_title} ({group_id})")
-                
-                # Pequeña pausa para evitar límites de velocidad
                 await asyncio.sleep(FORWARD_DELAY)
-                
             except Exception as e:
                 failed_forwards += 1
                 error_msg = str(e)
-                
-                # Manejar diferentes tipos de errores específicos
                 if "Bots can't send messages to other bots" in error_msg:
                     logger.warning(f"Error reenviando a {group_title} ({group_id}): El grupo contiene bots y no se puede reenviar")
-                    # Marcar como problemático para futuros intentos
                     PROBLEMATIC_GROUPS.add(group_id)
                 elif "A wait of" in error_msg and "seconds is required" in error_msg:
                     logger.warning(f"Error reenviando a {group_title} ({group_id}): Límite de velocidad alcanzado")
-                    # Pausar más tiempo antes del siguiente intento
                     await asyncio.sleep(10)
                 elif "CHAT_WRITE_FORBIDDEN" in error_msg:
                     logger.warning(f"Error reenviando a {group_title} ({group_id}): Sin permisos de escritura")
@@ -783,8 +746,6 @@ async def handle_saved_messages(event):
                     logger.warning(f"Error reenviando a {group_title} ({group_id}): Canal privado sin acceso")
                 else:
                     logger.error(f"Error reenviando a {group_title} ({group_id}): {e}")
-        
-        # Notificar resultado al usuario original
         if successful_forwards > 0:
             result_message = (
                 f"✅ **¡Reenvío completado!**\n\n"
@@ -793,8 +754,6 @@ async def handle_saved_messages(event):
                 f"• ❌ Fallidos: {failed_forwards}\n"
                 f"• 📋 Total: {len(TARGET_GROUP_IDS)}"
             )
-            
-            # Agregar información adicional si hay fallos
             if failed_forwards > 0:
                 result_message += "\n\n⚠️ **Nota:** Algunos grupos pueden contener bots, lo cual impide el reenvío automático."
         else:
@@ -806,48 +765,29 @@ async def handle_saved_messages(event):
                 "• Problemas de permisos\n"
                 "• Grupos privados sin acceso"
             )
-        
-        # Obtener el ID del usuario original del mensaje reenviado
         try:
-            # El mensaje original fue enviado por el bot al userbot
-            # Necesitamos encontrar al usuario que envió el mensaje original al bot
-            # Esto se puede hacer verificando los mensajes procesados
             admin_id = await get_admin_id()
-            
-            # Enviar notificación al dueño del userbot
             await send_notification_to_admin(result_message)
-            
-            # Si hay un usuario en procesamiento, notificarle también
             for user_id, message_id in bot_state.processing_message.items():
                 try:
                     await bot.edit_message(user_id, message_id, result_message)
                     bot_state.clear_processing(user_id)
                 except:
                     pass
-            
         except Exception as e:
             logger.error(f"Error notificando resultado: {e}")
-        
-        # Marcar mensaje como procesado para evitar duplicados
         PROCESSED_MESSAGES.add(message_id)
         logger.info(f"✅ Mensaje {message_id} marcado como procesado")
-        
-        # Limpiar mensajes antiguos (mantener solo los últimos 1000)
         if len(PROCESSED_MESSAGES) > 1000:
-            # Convertir a lista, tomar los últimos 1000 y volver a set
             processed_list = list(PROCESSED_MESSAGES)
             PROCESSED_MESSAGES = set(processed_list[-1000:])
             logger.info("🧹 Lista de mensajes procesados limpiada")
-        
         logger.info(f"Reenvío completado: {successful_forwards} exitosos, {failed_forwards} fallidos")
-
-        # Apagar el bot automáticamente después de reenviar
         logger.info("🛑 Apagando el bot tras finalizar el reenvío de mensajes...")
         await userbot.disconnect()
         await bot.disconnect()
         import sys
         sys.exit(0)
-        
     except Exception as e:
         logger.error(f"Error en handle_saved_messages: {e}")
         await send_notification_to_admin("❌ Error inesperado durante el reenvío.")
