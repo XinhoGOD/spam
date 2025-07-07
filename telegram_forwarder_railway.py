@@ -286,14 +286,41 @@ async def init_userbot():
             # Conectar sin autenticación interactiva
             await userbot.connect()
             
-            # Verificar que la sesión sea válida
-            if not await userbot.is_user_authorized():
-                logger.error("❌ SESSION_STRING no es válido o ha expirado")
-                raise Exception("Sesión no autorizada")
+            # Debug: obtener información de la sesión
+            logger.info(f"🔍 DEBUG - Userbot conectado al servidor: {userbot.session.server_address}")
+            logger.info(f"🔍 DEBUG - DC ID: {userbot.session.dc_id}")
             
-            userbot_info = await userbot.get_me()
-            logger.info(f"✅ Userbot conectado con session string: @{userbot_info.username}")
-            USERBOT_AVAILABLE = True
+            # Verificar que la sesión sea válida
+            try:
+                is_authorized = await userbot.is_user_authorized()
+                logger.info(f"🔍 DEBUG - is_user_authorized(): {is_authorized}")
+                
+                if not is_authorized:
+                    logger.warning("⚠️ SESSION_STRING no está autorizado - posibles causas:")
+                    logger.warning("   1. La sesión ha expirado")
+                    logger.warning("   2. La cuenta fue deslogueada de otros dispositivos")
+                    logger.warning("   3. La sesión se generó en un servidor diferente")
+                    logger.warning("   4. Cambios en la configuración de seguridad de Telegram")
+                    
+                    # Intentar obtener información básica para debug
+                    try:
+                        me = await userbot.get_me()
+                        logger.info(f"✅ ¡Sorpresa! Pude obtener información del usuario: @{me.username}")
+                        logger.info("🔍 La sesión funciona aunque is_user_authorized() devolvió False")
+                        USERBOT_AVAILABLE = True
+                        return
+                    except Exception as e:
+                        logger.error(f"❌ Confirmado: no se puede obtener información del usuario: {e}")
+                    
+                    raise Exception("Sesión no autorizada")
+                
+                userbot_info = await userbot.get_me()
+                logger.info(f"✅ Userbot conectado con session string: @{userbot_info.username}")
+                USERBOT_AVAILABLE = True
+                
+            except Exception as e:
+                logger.error(f"❌ Error verificando autorización: {e}")
+                raise
             
         elif not RAILWAY_MODE:
             logger.info("🔄 Intentando conectar userbot con sesión local...")
