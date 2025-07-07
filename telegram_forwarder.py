@@ -680,9 +680,7 @@ async def handle_saved_messages(event):
 
         # Si pasa los filtros, ejecutar la lógica de reenvío y apagado
         logger.info("✅ Mensaje válido detectado - procediendo con reenvío y apagado")
-        # ... (resto del código de reenvío y apagado igual que antes) ...
-        # (COPIAR aquí el bloque desde 'Contador de grupos exitosos' hasta sys.exit(0))
-
+        
         # Contador de grupos exitosos
         successful_forwards = 0
         failed_forwards = 0
@@ -1081,10 +1079,11 @@ async def start_bot():
         raise
 
 async def start_userbot():
-    """Inicia el userbot"""
+    """Inicia el userbot con autenticación automática"""
     try:
-        await userbot.start()
-        logger.info("Userbot iniciado correctamente")
+        # Intentar iniciar con autenticación automática
+        await userbot.start(phone=None, bot_token=BOT_TOKEN)
+        logger.info("Userbot iniciado correctamente con token de bot")
         
         # Obtener información del userbot
         userbot_info = await userbot.get_me()
@@ -1095,7 +1094,21 @@ async def start_userbot():
         
     except Exception as e:
         logger.error(f"Error iniciando userbot: {e}")
-        raise
+        # Si falla, intentar con archivo de sesión existente
+        try:
+            await userbot.start()
+            logger.info("Userbot iniciado con sesión existente")
+            
+            # Obtener información del userbot
+            userbot_info = await userbot.get_me()
+            logger.info(f"Userbot conectado como: @{userbot_info.username}")
+            
+            # Inicializar grupos de destino
+            await initialize_target_groups()
+            
+        except Exception as e2:
+            logger.error(f"Error iniciando userbot con sesión: {e2}")
+            raise
 
 async def main():
     """Función principal que ejecuta ambos clientes"""
@@ -1134,14 +1147,12 @@ async def main():
         logger.info("✅ Sistema híbrido iniciado correctamente")
         logger.info("🤖 Bot y userbot ejecutándose simultáneamente")
         
-        # Eliminar la ejecución indefinida para que el bot se apague tras el reenvío
-        # await asyncio.gather(
-        #     bot.run_until_disconnected(),
-        #     userbot.run_until_disconnected()
-        # )
-        logger.info("⏹️ Esperando reenvío, el sistema se apagará tras reenviar el mensaje.")
-        while True:
-            await asyncio.sleep(10)
+        # Mantener ambos clientes ejecutándose
+        logger.info("🔄 Sistema ejecutándose - esperando mensajes...")
+        await asyncio.gather(
+            bot.run_until_disconnected(),
+            userbot.run_until_disconnected()
+        )
         
     except KeyboardInterrupt:
         logger.info("Cerrando sistema...")

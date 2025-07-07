@@ -10,7 +10,7 @@ API_HASH = os.environ.get('API_HASH', "tu_api_hash_aquí")
 BOT_TOKEN = os.environ.get('BOT_TOKEN', "tu_bot_token_aquí")
 
 # 2. CONFIGURACIÓN DE GRUPOS DE DESTINO
-AUTO_GET_GROUPS = True  # Obtener automáticamente
+AUTO_GET_GROUPS = True  # Obtener automáticamente del userbot
 
 # LISTA MANUAL (solo si AUTO_GET_GROUPS = False)
 MANUAL_GROUP_IDS = [

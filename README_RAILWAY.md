@@ -25,7 +25,23 @@ API_HASH=91c195d7deb3fb56ee7a95eaeb13e2fb
 BOT_TOKEN=8157414882:AAHYfRdqn8IG770rDlROnBvFwi78k_KmGwA
 ```
 
-### **2. Configuración de Velocidad**
+### **2. Configuración de Grupos**
+El bot obtiene automáticamente los grupos del userbot. Asegúrate de que:
+
+- ✅ El userbot esté agregado a los grupos donde quieres reenviar
+- ✅ El userbot tenga permisos de administrador (recomendado)
+- ✅ Los grupos no contengan bots (pueden causar problemas)
+
+**Para configurar grupos manualmente** (opcional):
+```python
+AUTO_GET_GROUPS = False
+MANUAL_GROUP_IDS = [
+    -1001234567890,  # Reemplaza con IDs reales
+    -1001987654321,
+]
+```
+
+### **3. Configuración de Velocidad**
 - **Delay entre reenvíos:** 30 segundos (configurado para evitar límites de Telegram)
 - **Manejo automático de límites:** Si se detecta un límite, pausa 10 segundos adicionales
 - **Tiempo estimado:** ~2-3 minutos para reenviar a 10 grupos
@@ -43,6 +59,8 @@ BOT_TOKEN=8157414882:AAHYfRdqn8IG770rDlROnBvFwi78k_KmGwA
 - **Usar variables de entorno** para datos sensibles
 - **El bot se reiniciará** automáticamente si se cae
 - **Delay conservador** para evitar límites de velocidad
+- **AUTENTICACIÓN AUTOMÁTICA:** El userbot usa el token del bot para autenticarse automáticamente
+- **GRUPOS AUTOMÁTICOS:** El bot obtiene grupos automáticamente del userbot
 
 ## 🚀 Comandos de Railway
 
