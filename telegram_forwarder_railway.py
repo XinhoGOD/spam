@@ -264,6 +264,20 @@ async def init_userbot():
     logger.info(f"🔍 DEBUG - SESSION_STRING disponible: {bool(session_string_env)}")
     logger.info(f"🔍 DEBUG - Longitud SESSION_STRING: {len(session_string_env)}")
     
+    # DEBUG: Mostrar todas las variables que contienen "SESSION"
+    logger.info("🔍 DEBUG - Variables de entorno con 'SESSION':")
+    for key, value in os.environ.items():
+        if 'SESSION' in key.upper():
+            logger.info(f"  {key}: {len(value)} caracteres")
+    
+    # DEBUG: Mostrar primeras variables para confirmar
+    logger.info("🔍 DEBUG - Primeras 5 variables de entorno:")
+    for i, (key, value) in enumerate(os.environ.items()):
+        if i < 5:
+            logger.info(f"  {key}: {len(value)} caracteres")
+        else:
+            break
+    
     try:
         if USE_SESSION_STRING and SESSION_STRING:
             logger.info("🔄 Intentando conectar userbot con session string...")
