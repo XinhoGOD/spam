@@ -1,1 +1,1 @@
-worker: python telegram_forwarder.py 
+worker: python telegram_forwarder_railway.py 

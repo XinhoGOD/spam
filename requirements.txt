@@ -1,6 +1,5 @@
-# Dependencias del Bot Híbrido de Reenvío
-# ======================================
+# Dependencias del Bot Híbrido para Railway
+# =========================================
 
 telethon==1.36.0
-asyncio
 python-dotenv==1.0.0

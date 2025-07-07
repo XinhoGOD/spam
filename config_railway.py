@@ -5,9 +5,17 @@ import os
 
 # 1. CONFIGURACIÓN DE LA API DE TELEGRAM
 # Obtener desde variables de entorno de Railway
-API_ID = int(os.environ.get('API_ID', 12345678))
-API_HASH = os.environ.get('API_HASH', "tu_api_hash_aquí")
-BOT_TOKEN = os.environ.get('BOT_TOKEN', "tu_bot_token_aquí")
+API_ID = int(os.environ.get('API_ID', '22252541'))
+API_HASH = os.environ.get('API_HASH', '91c195d7deb3fb56ee7a95eaeb13e2fb')
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '8157414882:AAHYfRdqn8IG770rDlROnBvFwi78k_KmGwA')
+
+# 1.1. CONFIGURACIÓN DE SESIÓN PARA RAILWAY
+# Variables de entorno para la sesión del userbot
+PHONE_NUMBER = os.environ.get('PHONE_NUMBER', '')
+SESSION_STRING = os.environ.get('SESSION_STRING', '')
+
+# 1.1. CONFIGURACIÓN DEL USERBOT (sesión)
+# El userbot usará el archivo userbot_session.session para autenticarse
 
 # 2. CONFIGURACIÓN DE GRUPOS DE DESTINO
 AUTO_GET_GROUPS = True  # Obtener automáticamente del userbot
@@ -45,4 +53,10 @@ SECURITY_SETTINGS = {
     "notify_owner": True,
     "auto_detect_bot_groups": False,
     "exclude_bot_groups": False,
-} 
+}
+
+# 6. CONFIGURACIÓN ESPECÍFICA PARA RAILWAY
+# Para evitar problemas con autenticación en Railway
+RAILWAY_MODE = True
+USE_SESSION_STRING = bool(os.environ.get('SESSION_STRING', ''))
+FALLBACK_TO_BOT_ONLY = True  # Si no hay userbot, funcionar solo como bot normal

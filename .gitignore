@@ -1,13 +1,19 @@
 # Archivos de sesión de Telegram (contienen información sensible)
-# *.session
-# *.session-journal
-userbot_session.session
+*.session
+*.session-journal
+userbot_session.session*
+bot_session.session*
 
 # Archivos de configuración con datos sensibles
 config.py
+config_local.py
+.env
+.env.local
+.env.production
 
 # Logs
 *.log
+logs/
 
 # Archivos temporales
 __pycache__/
@@ -18,6 +24,15 @@ __pycache__/
 env/
 venv/
 .venv/
+
+# VS Code
+.vscode/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# IMPORTANTE: SESSION_STRING solo como variable de entorno en Railway
 
 # Archivos del sistema
 .DS_Store
